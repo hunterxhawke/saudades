@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="en" class="locked">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Saudades</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap">
+<style>
+/* Saudades: the deck's paper, ink and Garamond. The photos carry the color. */
+:root {
+  --paper: #f0f0e4;
+  --ink: #111110;
+  --mute: #6f6c62;
+  --rule: #d9d8c9;
+  --serif: "EB Garamond", "Adobe Garamond Pro", Garamond, "Times New Roman", serif;
+  --gut: clamp(14px, 4vw, 56px);
+  --gap: clamp(3px, .45vw, 6px);
+  --ease: cubic-bezier(.2, .7, .2, 1);
+  color-scheme: light;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--paper); color: var(--ink); }
+body { font: 19px/1.55 var(--serif); -webkit-font-smoothing: antialiased; }
+button, select, input { font: inherit; color: inherit; }
+:focus-visible { outline: 1.5px solid var(--ink); outline-offset: 3px; }
+.wrap { padding-inline: max(var(--gut), env(safe-area-inset-left)) max(var(--gut), env(safe-area-inset-right)); }
+.spaced { font-weight: 700; font-size: 13px; letter-spacing: .26em; text-transform: uppercase; }
+.spaced-lc { font-weight: 600; font-size: 14px; letter-spacing: .32em; }
+
+/* ---------- Title card: like the deck's cover ---------- */
+.cover { position: relative; min-height: min(92vh, 860px); display: grid; place-items: center; overflow: hidden; background: #5d5a74; color: #fbfaf2; }
+.cover img { position: absolute; inset: -4%; width: 108%; height: 108%; object-fit: cover; filter: blur(10px) saturate(1.05); transform: scale(1.04); opacity: 0; transition: opacity 1.2s ease; }
+.cover img.in { opacity: 1; }
+.cover::after { content: ""; position: absolute; inset: 0; background: rgba(20, 18, 30, .18); }
+.cover .t { position: relative; z-index: 1; text-align: center; padding: 0 var(--gut); }
+.cover h1 { font-weight: 400; font-size: clamp(64px, 13vw, 176px); line-height: .9; letter-spacing: .01em; font-variant: small-caps; }
+.cover h1 i { font-style: italic; }
+.cover .sub { margin-top: clamp(14px, 2vw, 22px); font-size: clamp(15px, 2.1vw, 22px); font-style: italic; letter-spacing: .02em; }
+.cover .sub2 { margin-top: 18px; }
+.cover .scroll { position: absolute; z-index: 1; bottom: 26px; left: 50%; transform: translateX(-50%); }
+
+/* ---------- Filter bar ---------- */
+.bar { position: sticky; top: 0; z-index: 10; background: var(--paper); border-block: 1px solid var(--rule); }
+.bar .wrap { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px clamp(14px, 2.6vw, 34px); padding-block: 10px; }
+.f { display: inline-flex; align-items: baseline; gap: 8px; }
+.f .spaced { font-size: 11px; color: var(--mute); }
+.f select {
+  appearance: none; -webkit-appearance: none; background: transparent; border: 0; border-radius: 0; cursor: pointer;
+  font-style: italic; font-size: 18px; padding: 2px 16px 2px 0;
+  background-image: linear-gradient(45deg, transparent 50%, var(--mute) 50%), linear-gradient(-45deg, transparent 50%, var(--mute) 50%);
+  background-size: 4px 4px; background-position: right 4px center, right 0 center; background-repeat: no-repeat;
+}
+.f select.on { text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px; }
+.reset { background: none; border: 0; cursor: pointer; font-style: italic; color: var(--mute); text-decoration: underline; text-underline-offset: 3px; }
+.reset[hidden] { display: none; }
+.tally { margin-left: auto; color: var(--mute); font-variant-numeric: oldstyle-nums; }
+@media (max-width: 700px) {
+  .bar .wrap { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .bar .wrap::-webkit-scrollbar { display: none; }
+  .f, .reset, .tally { flex: none; white-space: nowrap; }
+}
+
+/* ---------- Chapters + mosaic (justified rows, laid out in JS) ---------- */
+main { padding-block: clamp(28px, 4vw, 48px) clamp(56px, 9vw, 120px); }
+.chapter + .chapter { margin-top: clamp(48px, 7vw, 96px); }
+.chapter h2 { text-align: center; margin-bottom: clamp(14px, 2vw, 22px); font-weight: 700; font-size: clamp(14px, 1.6vw, 19px); letter-spacing: .2em; line-height: 1.4; }
+.chapter h2 .n { text-transform: uppercase; }
+.chapter h2 .sep { margin: 0 .5em; }
+.chapter h2 .nm { letter-spacing: .14em; }
+.chapter h2 .meta { display: block; font-weight: 400; font-style: italic; letter-spacing: .02em; font-size: .92em; color: var(--mute); margin-top: 2px; }
+.mosaic { display: flex; flex-direction: column; gap: var(--gap); }
+.row { display: flex; gap: var(--gap); }
+.stack { display: flex; flex-direction: column; gap: var(--gap); flex: none; }
+.tile { position: relative; overflow: hidden; background: #e2e1d3; border: 0; padding: 0; cursor: zoom-in; display: block; flex: none; }
+.tile img { width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0; transition: opacity .6s ease, transform .8s var(--ease); }
+.tile img.in { opacity: 1; }
+.tile:hover img { transform: scale(1.025); }
+.tile .lbl { position: absolute; left: 12px; bottom: 9px; right: 12px; color: #fff; font-size: 15px; line-height: 1.25; text-shadow: 0 1px 10px rgba(0,0,0,.55); opacity: 0; transition: opacity .25s; text-align: left; }
+.tile .lbl b { font-weight: 600; display: block; }
+.tile .lbl i { font-size: 14px; }
+.tile:hover .lbl, .tile:focus-visible .lbl, .tile.named .lbl { opacity: 1; }
+@media (max-width: 560px) { .tile .lbl { font-size: 13px; left: 8px; bottom: 6px; } .tile .lbl i { font-size: 12px; } }
+.empty { padding: 80px 0; text-align: center; font-style: italic; color: var(--mute); }
+
+footer { border-top: 1px solid var(--rule); padding-block: 22px 36px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; color: var(--mute); }
+footer .spaced { font-size: 11px; }
+
+/* ---------- Viewer: the photo on paper, caption set like the deck's character cards ---------- */
+.lb { position: fixed; inset: 0; z-index: 50; background: var(--paper); display: grid; grid-template-rows: auto minmax(0, 1fr) auto; opacity: 0; visibility: hidden; transition: opacity .25s, visibility .25s; touch-action: none; }
+.lb.open { opacity: 1; visibility: visible; }
+.lb-top { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: max(12px, env(safe-area-inset-top)) var(--gut) 8px; }
+.lb-top .pos { font-variant-numeric: lining-nums tabular-nums; }
+.lb-top .where { color: var(--mute); }
+.x { background: none; border: 0; cursor: pointer; width: 40px; height: 40px; position: relative; align-self: center; }
+.x::before, .x::after { content: ""; position: absolute; left: 10px; right: 10px; top: 50%; height: 1.5px; background: var(--ink); }
+.x::before { transform: rotate(45deg); } .x::after { transform: rotate(-45deg); }
+.stage { position: relative; overflow: hidden; min-height: 0; padding: 0 var(--gut); }
+.stage img { display: block; width: 100%; height: 100%; object-fit: contain; user-select: none; -webkit-user-drag: none; transition: transform .3s var(--ease); }
+.stage img.dragging { transition: none; }
+.arrow { position: absolute; top: 0; bottom: 0; width: min(16%, 120px); background: none; border: 0; cursor: pointer; display: grid; place-items: center; opacity: .55; transition: opacity .2s; }
+.arrow:hover { opacity: 1; }
+.arrow i { width: 16px; height: 16px; border: solid var(--ink); border-width: 0 0 1.5px 1.5px; }
+.prev { left: 0; } .prev i { transform: rotate(45deg); margin-left: 6px; }
+.next { right: 0; } .next i { transform: rotate(-135deg); margin-right: 6px; }
+@media (hover: none) { .arrow { opacity: 0; } }
+.meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px clamp(18px, 3vw, 40px); padding: 12px var(--gut) max(16px, env(safe-area-inset-bottom)); }
+.meta .cap { font-style: italic; font-size: 22px; flex-basis: 100%; }
+.meta .cap:empty { display: none; }
+.meta .k { display: block; font-size: 10px; color: var(--mute); }
+.meta .v { font-size: 17px; }
+.meta .v.unk { color: var(--mute); font-style: italic; }
+.people { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+.chip { display: inline-flex; align-items: baseline; gap: 4px; font-size: 17px; }
+.chip button { background: none; border: 0; cursor: pointer; color: var(--mute); font-size: 16px; line-height: 1; }
+.chip button:hover { color: var(--ink); }
+.addp input { width: 150px; background: transparent; border: 0; border-bottom: 1px solid var(--rule); border-radius: 0; padding: 0 2px; font-size: 17px; font-style: italic; }
+.addp input::placeholder { color: var(--mute); }
+.addp input:focus { outline: none; border-color: var(--ink); }
+.addp input::-webkit-calendar-picker-indicator { display: none !important; }
+
+/* ---------- Lock screen ---------- */
+html.locked .cover, html.locked .bar, html.locked main, html.locked footer { display: none; }
+.lock { display: none; min-height: 100dvh; place-items: center; padding: 24px var(--gut); text-align: center; }
+html.locked .lock { display: grid; }
+.lock h1 { font-weight: 400; font-size: clamp(56px, 12vw, 132px); line-height: .9; font-variant: small-caps; letter-spacing: .01em; }
+.lock .sub { margin-top: 14px; font-style: italic; font-size: clamp(16px, 2vw, 21px); color: var(--mute); }
+.lock form { margin: clamp(36px, 6vw, 56px) auto 0; display: flex; justify-content: center; align-items: baseline; gap: 18px; flex-wrap: wrap; }
+.lock input { width: min(300px, 78vw); background: transparent; border: 0; border-bottom: 1px solid var(--ink); border-radius: 0; padding: 6px 2px; font-size: 22px; text-align: center; letter-spacing: .04em; }
+.lock input:focus { outline: none; border-bottom-width: 2px; }
+.lock button { background: none; border: 0; cursor: pointer; padding: 6px 2px; }
+.lock button:disabled { color: var(--mute); cursor: wait; }
+.lock .err { min-height: 1.6em; margin-top: 16px; font-style: italic; color: var(--mute); }
+.lock .remember { display: inline-flex; align-items: center; gap: 8px; margin-top: 4px; font-style: italic; font-size: 16px; color: var(--mute); cursor: pointer; }
+.lock .remember input { width: auto; accent-color: var(--ink); }
+footer button.forget { background: none; border: 0; cursor: pointer; color: var(--mute); font-style: italic; text-decoration: underline; text-underline-offset: 3px; }
+</style>
+</head>
+<body>
+
+<section class="lock" aria-label="Enter password">
+  <div>
+    <h1>Saudades</h1>
+    <p class="sub">a private album for the cast &amp; crew of <span style="font-variant:small-caps">For It May Be Better Than</span> <i>Nothing at All</i></p>
+    <form id="lockForm" autocomplete="on">
+      <input id="pw" type="password" name="password" autocomplete="current-password" placeholder="password" aria-label="Password" required>
+      <button class="spaced" id="go" type="submit">Enter</button>
+    </form>
+    <label class="remember"><input type="checkbox" id="rem" checked> remember me on this device</label>
+    <p class="err" id="err" role="status"></p>
+  </div>
+</section>
+
+<section class="cover" aria-label="Saudades">
+  <img id="coverImg" alt="">
+  <div class="t">
+    <h1>Saudades</h1>
+    <p class="sub">from the making of <span style="font-variant:small-caps">For It May Be Better Than</span> <i>Nothing at All</i></p>
+    <p class="sub2 spaced-lc">a private album</p>
+  </div>
+  <span class="scroll spaced-lc">↓</span>
+</section>
+
+<nav class="bar" aria-label="Sort and filter">
+  <div class="wrap">
+    <label class="f"><span class="spaced">Roll</span><select id="fRoll"></select></label>
+    <label class="f"><span class="spaced">Date</span><select id="fDate"></select></label>
+    <label class="f"><span class="spaced">Place</span><select id="fPlace"></select></label>
+    <label class="f"><span class="spaced">Person</span><select id="fPerson"></select></label>
+    <label class="f"><span class="spaced">Order</span><select id="fSort">
+      <option value="frame">By roll</option>
+      <option value="old">Oldest first</option>
+      <option value="new">Newest first</option>
+    </select></label>
+    <button class="reset" id="reset" hidden>clear</button>
+    <span class="tally" id="count"></span>
+  </div>
+</nav>
+
+<main class="wrap">
+  <div id="chapters"></div>
+  <p class="empty" id="empty" hidden>Nothing here yet.</p>
+</main>
+
+<footer class="wrap">
+  <span class="spaced">Saudades</span>
+  <span><i>For It May Be Better Than Nothing at All</i> · <button class="forget" id="forget">lock</button></span>
+</footer>
+
+<div class="lb" id="lb" role="dialog" aria-modal="true" aria-label="Photo viewer">
+  <div class="lb-top">
+    <span><span class="pos spaced" id="lbPos"></span>&ensp;<i class="where" id="lbRoll"></i></span>
+    <button class="x" id="lbClose" aria-label="Close"></button>
+  </div>
+  <div class="stage" id="stage">
+    <img id="lbImg" alt="">
+    <button class="arrow prev" id="lbPrev" aria-label="Previous photo"><i></i></button>
+    <button class="arrow next" id="lbNext" aria-label="Next photo"><i></i></button>
+  </div>
+  <div class="meta">
+    <div class="cap" id="mCap"></div>
+    <div><span class="spaced k">Date</span><span class="v" id="mDate"></span></div>
+    <div><span class="spaced k">Place</span><span class="v" id="mPlace"></span></div>
+    <div><span class="spaced k">In this photo</span><div class="people" id="mPeople"></div></div>
+  </div>
+</div>
+
+<script>
+const CFG = {"v": "436e50d7", "salt": "3gsf/BJ7t1Mg4vWD+i4/DA==", "iter": 310000, "data": "d-436e50d746.bin"};
+function start(D, src) {
+  const PHOTOS = D.photos, ROLLS = D.rolls;            // rolls: [{name, numeral, date, place, note}]
+  const ROLL = Object.fromEntries(ROLLS.map((r, i) => [r.name, { ...r, i }]));
+  const NONE = '—';
+
+  // roll-level date/place fill in for film frames
+  PHOTOS.forEach(p => { const r = ROLL[p.roll] || {}; p._date = p.date || r.date || null; p._place = p.place || r.place || null; });
+
+  const KEY = 'saudades-tags-v1';
+  let tags = {};
+  try { tags = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { tags = {}; }
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(tags)); } catch (e) {} };
+  const peopleOf = p => [...new Set([...(p.people || []), ...(tags[p.id] || [])])];
+
+  const fmtDate = (d, withTime) => {
+    if (!d) return null;
+    const dt = new Date(d.length <= 10 ? d + 'T12:00:00' : d);
+    const s = dt.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
+    return withTime && d.length > 10 ? s + ', ' + dt.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : s;
+  };
+  const dateKey = p => p._date ? p._date.slice(0, 7) : NONE;
+  const placeKey = p => p._place || NONE;
+  const $ = id => document.getElementById(id);
+  const sel = { roll: $('fRoll'), date: $('fDate'), place: $('fPlace'), person: $('fPerson'), sort: $('fSort') };
+
+  function fill(s, values, allLabel, labelFor) {
+    const cur = s.value; s.innerHTML = ''; s.add(new Option(allLabel, ''));
+    values.forEach(v => s.add(new Option(labelFor ? labelFor(v) : v, v)));
+    s.value = values.includes(cur) ? cur : '';
+  }
+  function buildFilters() {
+    const uniq = f => [...new Set(PHOTOS.map(f))].sort((a, b) => a === NONE ? 1 : b === NONE ? -1 : a.localeCompare(b));
+    fill(sel.roll, ROLLS.map(r => r.name), 'all');
+    fill(sel.date, uniq(dateKey), 'any', v => v === NONE ? 'undated' : new Date(v + '-15').toLocaleDateString(undefined, { month: 'long', year: 'numeric' }));
+    // places ordered by how many photos, most first
+    const pc = {}; PHOTOS.forEach(p => { const k = placeKey(p); pc[k] = (pc[k] || 0) + 1; });
+    fill(sel.place, Object.keys(pc).sort((a, b) => a === NONE ? 1 : b === NONE ? -1 : pc[b] - pc[a]), 'anywhere', v => v === NONE ? 'unknown' : v);
+    const names = [...new Set(PHOTOS.flatMap(peopleOf))].sort();
+    fill(sel.person, names, names.length ? 'anyone' : 'no one tagged');
+  }
+
+  let view = [];
+  function apply() {
+    const f = { roll: sel.roll.value, date: sel.date.value, place: sel.place.value, person: sel.person.value };
+    view = PHOTOS.filter(p => (!f.roll || p.roll === f.roll) && (!f.date || dateKey(p) === f.date) &&
+      (!f.place || placeKey(p) === f.place) && (!f.person || peopleOf(p).includes(f.person)));
+    const s = sel.sort.value;
+    const byRoll = (a, b) => (ROLL[a.roll]?.i ?? 99) - (ROLL[b.roll]?.i ?? 99) || a.frame - b.frame;
+    if (s === 'frame') view.sort(byRoll);
+    else view.sort((a, b) => {
+      if (!a._date && !b._date) return byRoll(a, b);
+      if (!a._date) return 1; if (!b._date) return -1;
+      return s === 'new' ? b._date.localeCompare(a._date) : a._date.localeCompare(b._date);
+    });
+    Object.entries(sel).forEach(([k, x]) => x.classList.toggle('on', k !== 'sort' && !!x.value));
+    $('reset').hidden = !Object.values(f).some(Boolean);
+    render();
+  }
+
+  const io = 'IntersectionObserver' in window ? new IntersectionObserver(es => es.forEach(e => {
+    if (e.isIntersecting) { const t = e.target; io.unobserve(t); src(t.dataset.src).then(u => { t.src = u; }); }
+  }), { rootMargin: '800px 0px' }) : null;
+
+  function tile(p, i, w, h) {
+    const b = document.createElement('button');
+    b.className = 'tile'; b.style.width = w + 'px'; b.style.height = h + 'px';
+    const who = peopleOf(p);
+    b.setAttribute('aria-label', [p.caption, who.join(', '), p.roll + ' ' + p.frame].filter(Boolean).join(' · '));
+    const img = new Image(); img.alt = ''; img.decoding = 'async';
+    img.onload = () => img.classList.add('in'); img.dataset.src = p.thumb;
+    if (io) io.observe(img); else src(p.thumb).then(u => { img.src = u; });
+    b.append(img);
+    const name = who.join(', ') || '', cap = p.caption || '';
+    if (name || cap) b.classList.add('named');
+    const l = document.createElement('span'); l.className = 'lbl';
+    if (name) { const x = document.createElement('b'); x.textContent = name; l.append(x); }
+    const it = document.createElement('i'); it.textContent = cap || (p._place ? p._place : p.roll + ' · ' + p.frame); l.append(it);
+    b.append(l);
+    b.onclick = () => open(i);
+    return b;
+  }
+
+  // Units: one photo, or two small landscape frames stacked in one column.
+  function units(list, offset) {
+    const out = [];
+    for (let k = 0; k < list.length; k++) {
+      const p = list[k], n = list[k + 1];
+      const small = q => !q.select && q.w > q.h;
+      if (small(p) && n && small(n) && (offset + k) % 5 !== 0) { out.push({ stack: [offset + k, offset + k + 1], k: 1 / (p.h / p.w + n.h / n.w) }); k++; }
+      else out.push({ one: offset + k, a: p.w / p.h, big: !!p.select || p.h > p.w });
+    }
+    return out;
+  }
+
+  let lastW = 0;
+  function layout(container, list, offset) {
+    const W = container.clientWidth;
+    const gap = parseFloat(getComputedStyle(container).rowGap) || 4;
+    const base = W < 560 ? 140 : W < 900 ? 200 : 250;
+    const us = units(list, offset);
+    const height = row => { let A = 0, K = 0; row.forEach(u => u.stack ? K += u.k : A += u.a); return (W - (row.length - 1) * gap + gap * K) / (A + K); };
+    const tgt = r => base * (r.some(x => x.big) ? 1.6 : 1);
+    // Optimal row breaks: every row fills the width exactly, and we pick the breaks that keep
+    // each row's height closest to its target (least-squares, like justified text).
+    const n = us.length, cost = new Array(n + 1).fill(Infinity), from = new Array(n + 1).fill(0);
+    cost[0] = 0;
+    for (let j = 1; j <= n; j++) {
+      for (let i = j - 1; i >= 0 && j - i <= 14; i--) {
+        const r = us.slice(i, j), h = height(r), t = tgt(r);
+        if (h < t * .45) break;                       // too many in one row: stop widening
+        const c = cost[i] + Math.pow((h - t) / t, 2) * (h > t ? 1 : 1.6);
+        if (c < cost[j]) { cost[j] = c; from[j] = i; }
+      }
+    }
+    const rows = []; for (let j = n; j > 0; j = from[j]) rows.unshift(us.slice(from[j], j));
+    rows.forEach(r => {
+      const H = Math.min(height(r), tgt(r) * 2.2);
+      const el = document.createElement('div'); el.className = 'row'; el.style.height = H + 'px';
+      r.forEach(u => {
+        if (u.stack) {
+          const sw = (H - gap) * u.k, s = document.createElement('div'); s.className = 'stack'; s.style.width = sw + 'px';
+          u.stack.forEach(i => { const p = view[i]; s.append(tile(p, i, sw, sw * p.h / p.w)); }); el.append(s);
+        } else { const p = view[u.one]; el.append(tile(p, u.one, H * u.a, H)); }
+      });
+      container.append(el);
+    });
+  }
+
+  function render() {
+    const root = $('chapters'); root.innerHTML = '';
+    lastW = root.clientWidth;
+    // group into chapters by roll when ordered by roll; otherwise one continuous mosaic
+    const groups = [];
+    if (sel.sort.value === 'frame') view.forEach((p, i) => { const g = groups[groups.length - 1]; if (g && g.roll === p.roll) g.items.push(p); else groups.push({ roll: p.roll, start: i, items: [p] }); });
+    else groups.push({ roll: null, start: 0, items: view });
+    groups.forEach(g => {
+      const sec = document.createElement('section'); sec.className = 'chapter';
+      if (g.roll) {
+        const r = ROLL[g.roll] || {}, h = document.createElement('h2');
+        h.innerHTML = '<span class="n"></span><span class="sep">–</span><span class="nm"></span><span class="meta"></span>';
+        h.children[0].textContent = 'Chapter ' + (r.numeral || '');
+        h.children[2].textContent = g.roll;
+        h.children[3].textContent = [r.note, g.items.length + ' frames'].filter(Boolean).join(' · ');
+        sec.append(h);
+      }
+      const m = document.createElement('div'); m.className = 'mosaic'; sec.append(m); root.append(sec);
+      layout(m, g.items, g.start);
+    });
+    $('empty').hidden = view.length > 0;
+    $('count').textContent = view.length === PHOTOS.length ? PHOTOS.length + ' photographs' : view.length + ' of ' + PHOTOS.length;
+  }
+  if ('ResizeObserver' in window) new ResizeObserver(() => { const w = $('chapters').clientWidth; if (Math.abs(w - lastW) > 1) render(); }).observe($('chapters'));
+  else addEventListener('resize', render);
+
+  // ---------- Viewer ----------
+  const lb = $('lb'), lbImg = $('lbImg'); let cur = 0, lastFocus = null;
+  function show(i) {
+    cur = (i + view.length) % view.length; const p = view[cur];
+    lbImg.classList.remove('dragging'); lbImg.style.transform = '';
+    lbImg.removeAttribute('src'); src(p.full).then(u => { if (view[cur] === p) lbImg.src = u; }); lbImg.alt = p.caption || `${p.roll}, frame ${p.frame}`;
+    $('lbPos').textContent = `${cur + 1} / ${view.length}`;
+    $('lbRoll').textContent = `${p.roll}, ${p.source === 'iPhone' ? 'no.' : 'frame'} ${p.frame}`;
+    $('mCap').textContent = p.caption || '';
+    const d = fmtDate(p._date, true);
+    $('mDate').textContent = d || 'undated'; $('mDate').classList.toggle('unk', !d);
+    $('mPlace').textContent = p._place || 'unknown'; $('mPlace').classList.toggle('unk', !p._place);
+    drawPeople(p);
+    [1, -1].forEach(o => { const n = view[(cur + o + view.length) % view.length]; if (n) src(n.full); });
+  }
+  function drawPeople(p) {
+    const box = $('mPeople'); box.innerHTML = '';
+    peopleOf(p).forEach(n => {
+      const c = document.createElement('span'); c.className = 'chip'; c.textContent = n;
+      if ((tags[p.id] || []).includes(n)) { const x = document.createElement('button'); x.textContent = '×'; x.setAttribute('aria-label', 'Remove ' + n);
+        x.onclick = () => { tags[p.id] = tags[p.id].filter(t => t !== n); save(); afterTag(p); }; c.append(x); }
+      box.append(c);
+    });
+    const f = document.createElement('form'); f.className = 'addp';
+    const inp = document.createElement('input'); inp.placeholder = 'add a name'; inp.setAttribute('list', 'names'); inp.setAttribute('aria-label', 'Tag a person');
+    f.append(inp);
+    f.onsubmit = e => { e.preventDefault(); const n = inp.value.trim().replace(/\s+/g, ' '); if (!n) return;
+      tags[p.id] = [...new Set([...(tags[p.id] || []), n])]; save(); afterTag(p); $('mPeople').querySelector('input').focus(); };
+    box.append(f);
+    let dl = $('names'); if (!dl) { dl = document.createElement('datalist'); dl.id = 'names'; document.body.append(dl); }
+    dl.innerHTML = ''; [...new Set(PHOTOS.flatMap(peopleOf))].sort().forEach(n => dl.append(new Option(n)));
+  }
+  function afterTag(p) { buildFilters(); apply(); const ni = view.findIndex(v => v.id === p.id); if (ni >= 0) { cur = ni; drawPeople(p); } else if (view.length) show(Math.min(cur, view.length - 1)); else close(); }
+  function open(i) { lastFocus = document.activeElement; lb.classList.add('open'); document.body.style.overflow = 'hidden'; show(i); $('lbClose').focus(); }
+  function close() { lb.classList.remove('open'); document.body.style.overflow = ''; if (lastFocus) lastFocus.focus(); }
+  $('lbClose').onclick = close; $('lbPrev').onclick = () => show(cur - 1); $('lbNext').onclick = () => show(cur + 1);
+  document.addEventListener('keydown', e => {
+    if (!lb.classList.contains('open') || e.target.tagName === 'INPUT') return;
+    if (e.key === 'Escape') close(); if (e.key === 'ArrowLeft') show(cur - 1); if (e.key === 'ArrowRight') show(cur + 1);
+  });
+  const stage = $('stage'); let sx = 0, sy = 0, drag = false;
+  stage.addEventListener('pointerdown', e => { if (e.target.closest('.arrow')) return; drag = true; sx = e.clientX; sy = e.clientY; lbImg.classList.add('dragging'); });
+  stage.addEventListener('pointermove', e => { if (!drag) return; const dx = e.clientX - sx, dy = e.clientY - sy;
+    lbImg.style.transform = Math.abs(dx) > Math.abs(dy) ? `translateX(${dx}px)` : `translateY(${Math.max(0, dy)}px)`; });
+  const end = e => { if (!drag) return; drag = false; lbImg.classList.remove('dragging'); const dx = e.clientX - sx, dy = e.clientY - sy;
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) show(cur + (dx < 0 ? 1 : -1));
+    else if (dy > 110) close(); else lbImg.style.transform = ''; };
+  stage.addEventListener('pointerup', end); stage.addEventListener('pointercancel', end);
+
+  Object.values(sel).forEach(s => s.addEventListener('change', apply));
+  $('reset').onclick = () => { ['roll', 'date', 'place', 'person'].forEach(k => sel[k].value = ''); apply(); };
+
+  const ci = $('coverImg'); const cp = PHOTOS.find(p => p.id === D.cover) || PHOTOS[0];
+  if (cp) { ci.onload = () => ci.classList.add('in'); src(cp.full).then(u => { ci.src = u; }); }
+  buildFilters(); apply();
+}
+
+// ---------- Unlock: password -> AES key (PBKDF2), then decrypt the album and each photo in the browser ----------
+(() => {
+  const $ = id => document.getElementById(id);
+  const KEYSTORE = 'saudades-key-' + CFG.v;
+  const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+  const enc = new TextEncoder();
+  async function deriveKey(pw) {
+    const base = await crypto.subtle.importKey('raw', enc.encode(pw), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey({ name: 'PBKDF2', salt: b64(CFG.salt), iterations: CFG.iter, hash: 'SHA-256' },
+      base, { name: 'AES-GCM', length: 256 }, true, ['decrypt']);
+  }
+  async function decrypt(key, buf) {
+    const b = new Uint8Array(buf);
+    return crypto.subtle.decrypt({ name: 'AES-GCM', iv: b.slice(0, 12) }, key, b.slice(12));
+  }
+  async function open(key) {
+    const r = await fetch(CFG.data, { cache: 'no-cache' });
+    if (!r.ok) throw new Error('fetch');
+    const D = JSON.parse(new TextDecoder().decode(await decrypt(key, await r.arrayBuffer())));
+    const cache = new Map();
+    const src = path => {
+      if (!cache.has(path)) cache.set(path, fetch(path).then(r => r.arrayBuffer()).then(b => decrypt(key, b))
+        .then(d => URL.createObjectURL(new Blob([d], { type: 'image/webp' }))));
+      return cache.get(path);
+    };
+    document.documentElement.classList.remove('locked');
+    start(D, src);
+  }
+  async function tryStored() {
+    let raw = null;
+    try { raw = localStorage.getItem(KEYSTORE); } catch (e) {}
+    if (!raw) return false;
+    try { await open(await crypto.subtle.importKey('raw', b64(raw), 'AES-GCM', true, ['decrypt'])); return true; }
+    catch (e) { try { localStorage.removeItem(KEYSTORE); } catch (x) {} return false; }
+  }
+  $('lockForm').onsubmit = async e => {
+    e.preventDefault();
+    const pw = $('pw').value; if (!pw) return;
+    $('go').disabled = true; $('err').textContent = 'opening…';
+    try {
+      const key = await deriveKey(pw.trim());
+      await open(key);
+      if ($('rem').checked) {
+        const raw = new Uint8Array(await crypto.subtle.exportKey('raw', key));
+        try { localStorage.setItem(KEYSTORE, btoa(String.fromCharCode(...raw))); } catch (x) {}
+      }
+    } catch (err) {
+      $('err').textContent = err.message === 'fetch' ? 'The album couldn’t be reached. Try again in a moment.' : 'That’s not it. Try again.';
+      $('go').disabled = false; $('pw').select();
+    }
+  };
+  $('forget').onclick = () => { try { localStorage.removeItem(KEYSTORE); } catch (e) {} location.reload(); };
+  if (!window.crypto || !crypto.subtle) { $('err').textContent = 'This browser can’t open the album. Try a recent Safari, Chrome or Firefox.'; return; }
+  tryStored().then(ok => { if (!ok) $('pw').focus(); });
+})();
+</script>
+</body>
+</html>
