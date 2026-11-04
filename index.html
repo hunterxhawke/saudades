@@ -145,7 +145,7 @@ footer button.forget { background: none; border: 0; cursor: pointer; color: var(
     <h1>Saudades</h1>
     <p class="sub">a private album for the cast &amp; crew of <span style="font-variant:small-caps">For It May Be Better Than</span> <i>Nothing at All</i></p>
     <form id="lockForm" autocomplete="on">
-      <input id="pw" type="password" name="password" autocomplete="current-password" placeholder="password" aria-label="Password" required>
+      <input id="pw" type="password" name="password" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="password" aria-label="Password" required>
       <button class="spaced" id="go" type="submit">Enter</button>
     </form>
     <label class="remember"><input type="checkbox" id="rem" checked> remember me on this device</label>
@@ -460,7 +460,7 @@ function start(D, src) {
     const pw = $('pw').value; if (!pw) return;
     $('go').disabled = true; $('err').textContent = 'opening…';
     try {
-      const key = await deriveKey(pw.trim());
+      const key = await deriveKey(pw.trim().replace(/\s+/g, ' ').toLowerCase());
       await open(key);
       if ($('rem').checked) {
         const raw = new Uint8Array(await crypto.subtle.exportKey('raw', key));
@@ -472,6 +472,13 @@ function start(D, src) {
     }
   };
   $('forget').onclick = () => { try { localStorage.removeItem(KEYSTORE); } catch (e) {} location.reload(); };
+  if (!window.isSecureContext && location.protocol === 'http:') {
+    $('err').textContent = 'Opening the secure version…';
+    fetch('https://' + location.host + location.pathname, { method: 'HEAD', mode: 'no-cors' })
+      .then(() => location.replace('https://' + location.host + location.pathname))
+      .catch(() => { $('err').textContent = 'This address isn’t secure yet, so the album can’t open here. Use hunterxhawke.github.io/saudades for now.'; $('go').disabled = true; });
+    return;
+  }
   if (!window.crypto || !crypto.subtle) { $('err').textContent = 'This browser can’t open the album. Try a recent Safari, Chrome or Firefox.'; return; }
   tryStored().then(ok => { if (!ok) $('pw').focus(); });
 })();
