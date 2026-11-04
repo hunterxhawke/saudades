@@ -403,6 +403,13 @@ function start(D, src) {
     src(p.full).then(u => { if (el.dataset.id === p.id) el.src = u; }); };
   const at = o => view.length > 1 ? view[(cur + o + view.length) % view.length] : null;
   // slide the strip one photo left (+1) or right (-1), then recycle the slide that left the screen
+  // arrows and keys (desktop): a quick fade, no slide
+  function step(dir) {
+    if (sliding || view.length < 2) return;
+    slides = dir > 0 ? [slides[1], slides[2], slides[0]] : [slides[2], slides[0], slides[1]];
+    place(); track.style.transform = ''; show(cur + dir);
+    lbImg.animate?.([{ opacity: 0 }, { opacity: 1 }], { duration: 160, easing: 'ease-out' });
+  }
   function go(dir) {
     if (sliding || view.length < 2) return; sliding = true;
     if (z.s > 1) { z = { s: 1, x: 0, y: 0 }; lbImg.style.transform = ''; }
@@ -445,10 +452,10 @@ function start(D, src) {
   function afterTag(p) { buildFilters(); apply(); const ni = view.findIndex(v => v.id === p.id); if (ni >= 0) { cur = ni; drawPeople(p); } else if (view.length) show(Math.min(cur, view.length - 1)); else close(); }
   function open(i) { place(); track.style.transform = ''; lastFocus = document.activeElement; lb.classList.add('open'); document.body.style.overflow = 'hidden'; show(i); $('lbClose').focus(); setTimeout(showHint, 600); }
   function close() { if (lb.classList.contains('immersive')) toggleImmersive(false); lb.classList.remove('open'); document.body.style.overflow = ''; if (lastFocus) lastFocus.focus(); }
-  $('lbClose').onclick = close; $('lbPrev').onclick = () => go(-1); $('lbNext').onclick = () => go(1);
+  $('lbClose').onclick = close; $('lbPrev').onclick = () => step(-1); $('lbNext').onclick = () => step(1);
   document.addEventListener('keydown', e => {
     if (!lb.classList.contains('open') || e.target.tagName === 'INPUT') return;
-    if (e.key === 'Escape') { if (lb.classList.contains('immersive')) toggleImmersive(false); else close(); } if (e.key === 'f' || e.key === 'F') toggleImmersive(); if (e.key === 'ArrowLeft') go(-1); if (e.key === 'ArrowRight') go(1);
+    if (e.key === 'Escape') { if (lb.classList.contains('immersive')) toggleImmersive(false); else close(); } if (e.key === 'f' || e.key === 'F') toggleImmersive(); if (e.key === 'ArrowLeft') step(-1); if (e.key === 'ArrowRight') step(1);
   });
   // ---------- Gestures: tap = hide/show everything, swipe = next/prev, swipe down = close,
   //            pinch or double-tap = zoom, drag = pan while zoomed ----------
