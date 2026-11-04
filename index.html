@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <title>Saudades</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Saudades">
+<meta name="theme-color" content="#f0f0e4">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap">
@@ -136,6 +143,20 @@ html.locked .lock { display: grid; }
 .lock .remember { display: inline-flex; align-items: center; gap: 8px; margin-top: 4px; font-style: italic; font-size: 16px; color: var(--mute); cursor: pointer; }
 .lock .remember input { width: auto; accent-color: var(--ink); }
 footer button.forget { background: none; border: 0; cursor: pointer; color: var(--mute); font-style: italic; text-decoration: underline; text-underline-offset: 3px; }
+
+/* ---------- Immersive: tap the photo and everything else gets out of the way ---------- */
+.lb-top, .meta, .arrow { transition: opacity .3s ease, visibility .3s; }
+.lb { transition: opacity .25s, visibility .25s, background-color .35s ease; }
+.lb.immersive { background: #000; grid-template-rows: 0 minmax(0, 1fr) 0; cursor: none; }
+.lb.immersive .lb-top, .lb.immersive .meta, .lb.immersive .arrow { opacity: 0; visibility: hidden; }
+.lb.immersive .stage { padding: 0; }
+.lb.immersive .stage img { padding: 0; }
+.lb .stage img { transform-origin: 0 0; will-change: transform; }
+.lb-tools { display: flex; align-items: center; gap: 4px; }
+.fs { background: none; border: 0; cursor: pointer; width: 40px; height: 40px; display: grid; place-items: center; }
+.fs svg { width: 18px; height: 18px; stroke: var(--ink); fill: none; stroke-width: 1.5; }
+.hint { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 3; padding: 7px 14px; background: rgba(17,17,16,.78); color: #f0f0e4; font-style: italic; font-size: 15px; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity .4s; }
+.hint.on { opacity: 1; }
 </style>
 </head>
 <body>
@@ -192,10 +213,11 @@ footer button.forget { background: none; border: 0; cursor: pointer; color: var(
 <div class="lb" id="lb" role="dialog" aria-modal="true" aria-label="Photo viewer">
   <div class="lb-top">
     <span><span class="pos spaced" id="lbPos"></span>&ensp;<i class="where" id="lbRoll"></i></span>
-    <button class="x" id="lbClose" aria-label="Close"></button>
+    <span class="lb-tools"><button class="fs" id="lbFull" aria-label="Full screen" title="Full screen (F)"><svg viewBox="0 0 18 18"><path d="M1 6V1h5M12 1h5v5M17 12v5h-5M6 17H1v-5"/></svg></button><button class="x" id="lbClose" aria-label="Close"></button></span>
   </div>
   <div class="stage" id="stage">
     <img id="lbImg" alt="">
+    <span class="hint" id="hint">tap the photo to hide everything</span>
     <button class="arrow prev" id="lbPrev" aria-label="Previous photo"><i></i></button>
     <button class="arrow next" id="lbNext" aria-label="Next photo"><i></i></button>
   </div>
@@ -367,7 +389,7 @@ function start(D, src) {
   const lb = $('lb'), lbImg = $('lbImg'); let cur = 0, lastFocus = null;
   function show(i) {
     cur = (i + view.length) % view.length; const p = view[cur];
-    lbImg.classList.remove('dragging'); lbImg.style.transform = '';
+    lbImg.classList.remove('dragging'); lbImg.style.transform = ''; z = { s: 1, x: 0, y: 0 };
     lbImg.removeAttribute('src'); src(p.full).then(u => { if (view[cur] === p) lbImg.src = u; }); lbImg.alt = p.caption || `${p.roll}, frame ${p.frame}`;
     $('lbPos').textContent = `${cur + 1} / ${view.length}`;
     $('lbRoll').textContent = `${p.roll}, ${p.source === 'iPhone' ? 'no.' : 'frame'} ${p.frame}`;
@@ -396,21 +418,85 @@ function start(D, src) {
     dl.innerHTML = ''; [...new Set(PHOTOS.flatMap(peopleOf))].sort().forEach(n => dl.append(new Option(n)));
   }
   function afterTag(p) { buildFilters(); apply(); const ni = view.findIndex(v => v.id === p.id); if (ni >= 0) { cur = ni; drawPeople(p); } else if (view.length) show(Math.min(cur, view.length - 1)); else close(); }
-  function open(i) { lastFocus = document.activeElement; lb.classList.add('open'); document.body.style.overflow = 'hidden'; show(i); $('lbClose').focus(); }
-  function close() { lb.classList.remove('open'); document.body.style.overflow = ''; if (lastFocus) lastFocus.focus(); }
+  function open(i) { lastFocus = document.activeElement; lb.classList.add('open'); document.body.style.overflow = 'hidden'; show(i); $('lbClose').focus(); setTimeout(showHint, 600); }
+  function close() { if (lb.classList.contains('immersive')) toggleImmersive(false); lb.classList.remove('open'); document.body.style.overflow = ''; if (lastFocus) lastFocus.focus(); }
   $('lbClose').onclick = close; $('lbPrev').onclick = () => show(cur - 1); $('lbNext').onclick = () => show(cur + 1);
   document.addEventListener('keydown', e => {
     if (!lb.classList.contains('open') || e.target.tagName === 'INPUT') return;
-    if (e.key === 'Escape') close(); if (e.key === 'ArrowLeft') show(cur - 1); if (e.key === 'ArrowRight') show(cur + 1);
+    if (e.key === 'Escape') { if (lb.classList.contains('immersive')) toggleImmersive(false); else close(); } if (e.key === 'f' || e.key === 'F') toggleImmersive(); if (e.key === 'ArrowLeft') show(cur - 1); if (e.key === 'ArrowRight') show(cur + 1);
   });
-  const stage = $('stage'); let sx = 0, sy = 0, drag = false;
-  stage.addEventListener('pointerdown', e => { if (e.target.closest('.arrow')) return; drag = true; sx = e.clientX; sy = e.clientY; lbImg.classList.add('dragging'); });
-  stage.addEventListener('pointermove', e => { if (!drag) return; const dx = e.clientX - sx, dy = e.clientY - sy;
-    lbImg.style.transform = Math.abs(dx) > Math.abs(dy) ? `translateX(${dx}px)` : `translateY(${Math.max(0, dy)}px)`; });
-  const end = e => { if (!drag) return; drag = false; lbImg.classList.remove('dragging'); const dx = e.clientX - sx, dy = e.clientY - sy;
+  // ---------- Gestures: tap = hide/show everything, swipe = next/prev, swipe down = close,
+  //            pinch or double-tap = zoom, drag = pan while zoomed ----------
+  const stage = $('stage');
+  let z = { s: 1, x: 0, y: 0 };                        // zoom state of the current photo
+  const pts = new Map(); let g = null, lastTap = 0, tapTimer = null;
+  const applyZ = (anim) => { lbImg.classList.toggle('dragging', !anim); lbImg.style.transform = z.s === 1 && !z.x && !z.y ? '' : `translate(${z.x}px, ${z.y}px) scale(${z.s})`; };
+  const resetZ = () => { z = { s: 1, x: 0, y: 0 }; applyZ(true); };
+  const clampZ = () => {
+    const r = stage.getBoundingClientRect(), W = r.width, H = r.height;
+    if (z.s <= 1.01) { z = { s: 1, x: 0, y: 0 }; return; }
+    z.s = Math.min(z.s, 5);
+    z.x = Math.min(0, Math.max(W - W * z.s, z.x)); z.y = Math.min(0, Math.max(H - H * z.s, z.y));
+  };
+  const zoomAt = (s, cx, cy) => { const r = stage.getBoundingClientRect(); const px = cx - r.left, py = cy - r.top;
+    z.x = px - (px - z.x) * (s / z.s); z.y = py - (py - z.y) * (s / z.s); z.s = s; };
+  const toggleImmersive = (force) => {
+    const on = force ?? !lb.classList.contains('immersive');
+    lb.classList.toggle('immersive', on); hideHint();
+    const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+    try {
+      if (on && !fsEl && lb.requestFullscreen) lb.requestFullscreen({ navigationUI: 'hide' }).catch(() => {});
+      else if (on && !fsEl && lb.webkitRequestFullscreen) lb.webkitRequestFullscreen();
+      else if (!on && fsEl) (document.exitFullscreen || document.webkitExitFullscreen).call(document)?.catch?.(() => {});
+    } catch (e) {}
+  };
+  const onFsChange = () => { if (!(document.fullscreenElement || document.webkitFullscreenElement) && lb.classList.contains('immersive') && !matchMedia('(hover: none)').matches) lb.classList.remove('immersive'); };
+  document.addEventListener('fullscreenchange', onFsChange); document.addEventListener('webkitfullscreenchange', onFsChange);
+  $('lbFull').onclick = () => toggleImmersive(true);
+  let hintShown = false; try { hintShown = !!localStorage.getItem('saudades-hint'); } catch (e) {}
+  function showHint() { if (hintShown) return; hintShown = true; try { localStorage.setItem('saudades-hint', '1'); } catch (e) {}
+    const h = $('hint'); h.classList.add('on'); setTimeout(hideHint, 3200); }
+  function hideHint() { $('hint').classList.remove('on'); }
+
+  stage.addEventListener('pointerdown', e => {
+    if (e.target.closest('.arrow')) return;
+    stage.setPointerCapture?.(e.pointerId);
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pts.size === 1) g = { mode: 'one', x0: e.clientX, y0: e.clientY, t0: Date.now(), zx: z.x, zy: z.y, moved: false };
+    else if (pts.size === 2) { const [a, b] = [...pts.values()];
+      g = { mode: 'pinch', d0: Math.hypot(a.x - b.x, a.y - b.y), s0: z.s, cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2, zx: z.x, zy: z.y, moved: true }; }
+  });
+  stage.addEventListener('pointermove', e => {
+    if (!pts.has(e.pointerId) || !g) return;
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (g.mode === 'pinch' && pts.size >= 2) {
+      const [a, b] = [...pts.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y);
+      const s = Math.max(1, Math.min(5, g.s0 * d / g.d0)); z = { s: g.s0, x: g.zx, y: g.zy }; zoomAt(s, g.cx, g.cy);
+      z.x += (a.x + b.x) / 2 - g.cx; z.y += (a.y + b.y) / 2 - g.cy; applyZ(false); return;
+    }
+    const dx = e.clientX - g.x0, dy = e.clientY - g.y0;
+    if (Math.abs(dx) + Math.abs(dy) > 8) g.moved = true;
+    if (!g.moved) return;
+    if (z.s > 1) { z.x = g.zx + dx; z.y = g.zy + dy; applyZ(false); }        // pan the zoomed photo
+    else lbImg.style.transform = Math.abs(dx) > Math.abs(dy) ? `translateX(${dx}px)` : `translateY(${Math.max(0, dy)}px)`, lbImg.classList.add('dragging');
+  });
+  const end = e => {
+    if (!pts.has(e.pointerId)) return; pts.delete(e.pointerId);
+    if (!g) return;
+    if (g.mode === 'pinch') { if (pts.size === 0) { clampZ(); applyZ(true); g = null; } return; }
+    const dx = e.clientX - g.x0, dy = e.clientY - g.y0; const mode = g; g = null; lbImg.classList.remove('dragging');
+    if (!mode.moved && e.type === 'pointerup') {                  // a tap: single = hide/show, double = zoom
+      const now = Date.now();
+      if (now - lastTap < 280) { clearTimeout(tapTimer); lastTap = 0;
+        if (z.s > 1) resetZ(); else { zoomAt(2.5, e.clientX, e.clientY); clampZ(); applyZ(true); } return; }
+      lastTap = now; tapTimer = setTimeout(() => toggleImmersive(), 280); return;
+    }
+    if (z.s > 1) { clampZ(); applyZ(true); return; }
     if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) show(cur + (dx < 0 ? 1 : -1));
-    else if (dy > 110) close(); else lbImg.style.transform = ''; };
+    else if (dy > 110) close(); else lbImg.style.transform = '';
+  };
   stage.addEventListener('pointerup', end); stage.addEventListener('pointercancel', end);
+  stage.addEventListener('wheel', e => { if (!e.ctrlKey) return; e.preventDefault(); zoomAt(Math.max(1, Math.min(5, z.s * (1 - e.deltaY / 200))), e.clientX, e.clientY); clampZ(); applyZ(false); }, { passive: false });
 
   Object.values(sel).forEach(s => s.addEventListener('change', apply));
   $('reset').onclick = () => { ['roll', 'date', 'place', 'person'].forEach(k => sel[k].value = ''); apply(); };
