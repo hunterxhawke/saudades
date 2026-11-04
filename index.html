@@ -164,6 +164,8 @@ footer button.forget { background: none; border: 0; cursor: pointer; color: var(
 .track .slide { position: absolute; top: 0; width: 100%; height: 100%; padding: 0 var(--gut); box-sizing: border-box; }
 .lb.immersive .track .slide { padding: 0; }
 @media (hover: none) { .arrow { display: none; } }   /* on touch screens, swiping replaces the arrows */
+.film { font-variant: small-caps; font-style: normal; letter-spacing: .02em; }
+.film i { font-style: italic; }
 </style>
 </head>
 <body>
@@ -171,7 +173,7 @@ footer button.forget { background: none; border: 0; cursor: pointer; color: var(
 <section class="lock" aria-label="Enter password">
   <div>
     <h1>Saudades</h1>
-    <p class="sub">a private album for the cast &amp; crew of <span style="font-variant:small-caps">For It May Be Better Than</span> <i>Nothing at All</i></p>
+    <p class="sub">a private album for the cast &amp; crew of <span class="film">For It May Be Better Than <i>Nothing at All</i></span></p>
     <form id="lockForm" autocomplete="on">
       <input id="pw" type="password" name="password" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="password" aria-label="Password" required>
       <button class="spaced" id="go" type="submit">Enter</button>
@@ -185,7 +187,7 @@ footer button.forget { background: none; border: 0; cursor: pointer; color: var(
   <img id="coverImg" alt="">
   <div class="t">
     <h1>Saudades</h1>
-    <p class="sub">from the making of <span style="font-variant:small-caps">For It May Be Better Than</span> <i>Nothing at All</i></p>
+    <p class="sub">from the making of <span class="film">For It May Be Better Than <i>Nothing at All</i></span></p>
     <p class="sub2 spaced-lc">a private album</p>
   </div>
   <span class="scroll spaced-lc">↓</span>
@@ -214,7 +216,7 @@ footer button.forget { background: none; border: 0; cursor: pointer; color: var(
 
 <footer class="wrap">
   <span class="spaced">Saudades</span>
-  <span><i>For It May Be Better Than Nothing at All</i> · <button class="forget" id="forget">lock</button></span>
+  <span><span class="film">For It May Be Better Than <i>Nothing at All</i></span> · <button class="forget" id="forget">lock</button></span>
 </footer>
 
 <div class="lb" id="lb" role="dialog" aria-modal="true" aria-label="Photo viewer">
