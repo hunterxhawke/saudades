@@ -436,12 +436,12 @@ function start(D, src) {
     return crypto.subtle.decrypt({ name: 'AES-GCM', iv: b.slice(0, 12) }, key, b.slice(12));
   }
   async function open(key) {
-    const r = await fetch(CFG.data, { cache: 'no-cache' });
+    const r = await fetch((CFG.base || '') + CFG.data, { cache: 'no-cache' });
     if (!r.ok) throw new Error('fetch');
     const D = JSON.parse(new TextDecoder().decode(await decrypt(key, await r.arrayBuffer())));
     const cache = new Map();
     const src = path => {
-      if (!cache.has(path)) cache.set(path, fetch(path).then(r => r.arrayBuffer()).then(b => decrypt(key, b))
+      if (!cache.has(path)) cache.set(path, fetch((CFG.base || '') + path).then(r => r.arrayBuffer()).then(b => decrypt(key, b))
         .then(d => URL.createObjectURL(new Blob([d], { type: 'image/webp' }))));
       return cache.get(path);
     };
