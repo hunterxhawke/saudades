@@ -254,6 +254,7 @@ function start(D, src) {
 
   const fmtDate = (d, withTime) => {
     if (!d) return null;
+    if (d.length === 7) return new Date(d + '-15T12:00:00').toLocaleDateString(undefined, { month: 'long', year: 'numeric' });   // month known, day not
     const dt = new Date(d.length <= 10 ? d + 'T12:00:00' : d);
     const s = dt.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
     return withTime && d.length > 10 ? s + ', ' + dt.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : s;
